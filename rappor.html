@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion de Stock</title>
+    <style>
+        /* Styles généraux */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+        }
+
+        header {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        h2 {
+            color: #343a40;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Tableau de bord */
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            flex: 1;
+            min-width: 250px;
+            margin: 0.5rem;
+            background: #fff;
+            color: #343a40;
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        .dashboard-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .dashboard-card.total {
+            border-top: 4px solid #007bff;
+        }
+
+        .dashboard-card.rented {
+            border-top: 4px solid #ffc107;
+        }
+
+        .dashboard-card.in-stock {
+            border-top: 4px solid #28a745;
+        }
+
+        /* Icônes d'action */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #007bff;
+            color: white;
+            width: 200px;
+            height: 60px;
+            margin: 0 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            flex-direction: row;
+            text-align: center;
+            position: relative;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .action-button .icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        .action-button.add {
+            background-color: #28a745;
+        }
+
+        .action-button.add:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+
+        .action-button.remove {
+            background-color: #dc3545;
+        }
+
+        .action-button.remove:hover {
+            background-color: #c82333;
+            transform: scale(1.05);
+        }
+
+        /* Formulaires */
+        form {
+            background: #fff;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        form input, form select, form button {
+            display: block;
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+
+        form input:focus, form select:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.5);
+        }
+
+        form button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        form button:hover {
+            background: #0056b3;
+        }
+
+        .material-list {
+            margin-bottom: 2rem;
+        }
+
+        /* Barre de recherche */
+        #search-bar {
+            padding: 0.75rem;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+
+        /* Conteneur du tableau pour le défilement horizontal */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            min-width: 600px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        table th, table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        table th {
+            background: #343a40;
+            color: white;
+        }
+
+        table tr:hover {
+            background: #f1f1f1;
+        }
+
+        /* Popups */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .popup.active {
+            display: flex;
+        }
+
+        .popup-content {
+            background: #fff;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            border-radius: 8px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .popup-content h3 {
+            margin-top: 0;
+        }
+
+        .popup-content input, .popup-content button, .popup-content select {
+            width: 100%;
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+
+        .popup-content button {
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .popup-content button:hover {
+            background: #218838;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .close-btn:hover {
+            color: #343a40;
+        }
+
+        /* Statuts */
+        .status-rented {
+            color: red;
+        }
+
+        .status-instock {
+            color: green;
+        }
+
+        /* Boutons généraux */
+        button {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        /* Bouton "Supprimer toutes les Catégories" */
+        .delete-button {
+            background-color: #dc3545;
+        }
+
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+
+        /* Section Actions */
+        .actions {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .actions button {
+            background-color: #007bff;
+        }
+
+        .actions button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Styles pour la section de filtrage */
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .filter-section input[type="text"],
+        .filter-section select {
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .filter-section select {
+            width: auto;
+        }
+
+        /* Boutons "Location" et "Vente" */
+        .operation-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .operation-buttons button {
+            margin: 0 1rem;
+            background-color: #17a2b8;
+            width: 150px;
+        }
+
+        .operation-buttons button:hover {
+            background-color: #138496;
+        }
+
+        /* Bouton "Annuler l'Opération" */
+        #cancel-operation {
+            background-color: #dc3545;
+        }
+
+        #cancel-operation:hover {
+            background-color: #c82333;
+        }
+
+        /* Bouton "Rédiger le Bon de Sortie" */
+        #operation-button {
+            background-color: #28a745;
+        }
+
+        #operation-button:hover {
+            background-color: #218838;
+        }
+
+        /* Styles pour les petits écrans */
+        @media (max-width: 768px) {
+            .dashboard {
+                flex-direction: column;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .dashboard-card {
+                margin: 0.5rem 0;
+            }
+
+            .dashboard-card h3 {
+                font-size: 1rem;
+            }
+
+            form input, form select, form button {
+                margin: 0.5rem 0;
+                padding: 0.5rem;
+            }
+
+            table th, table td {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-button {
+                margin: 0.5rem 0;
+                width: 100%;
+                height: auto;
+            }
+
+            .operation-buttons {
+                flex-direction: column;
+            }
+
+            .operation-buttons button {
+                margin: 0.5rem 0;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-section input[type="text"],
+            .filter-section select {
+                margin-right: 0;
+                width: 100%;
+            }
+
+            #search-bar {
+                max-width: 100%;
+            }
+        }
+
+        /* Style pour le bouton "Enregistrer" sous forme d'icône */
+        .save-button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .save-button .icon {
+            font-size: 1.2rem;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gestion de Stock</h1>
+    </header>
+    <main>
+        <!-- Tableau de bord -->
+        <section class="dashboard">
+            <div class="dashboard-card total" onclick="filterByStatus('')">
+                <h3>Total Matériels</h3>
+                <p id="total-items">0</p>
+            </div>
+            <div class="dashboard-card rented" onclick="filterByStatus('Loué')">
+                <h3>Matériels Loués</h3>
+                <p id="rented-items">0</p>
+            </div>
+            <div class="dashboard-card in-stock" onclick="filterByStatus('Sur Stock')">
+                <h3>En Stock</h3>
+                <p id="in-stock-items">0</p>
+            </div>
+        </section>
+
+        <!-- Icônes d'action -->
+        <section class="action-buttons">
+            <div class="action-button add" onclick="openAddMaterial()">
+                <div class="icon">&#x2795;</div>
+                <div class="text">Ajouter Matériel</div>
+            </div>
+            <div class="action-button remove" onclick="openMaterialList()">
+                <div class="icon">&#x2796;</div>
+                <div class="text">Sortie de Matériel</div>
+            </div>
+        </section>
+
+        <!-- Sections cachées initialement -->
+        <div id="add-material-section" style="display: none;">
+            <!-- Gestion des Catégories -->
+            <section class="category-management">
+                <h2>Gestion des Catégories</h2>
+                <form id="category-form">
+                    <input type="text" id="category-name" placeholder="Nom de la Catégorie" required>
+                    <button type="button" onclick="addCategory()">Ajouter Catégorie</button>
+                </form>
+                <form id="subcategory-form">
+                    <select id="parent-category">
+                        <option value="" disabled selected>Choisir une Catégorie</option>
+                    </select>
+                    <input type="text" id="subcategory-name" placeholder="Nom de la Sous-Catégorie" required>
+                    <button type="button" onclick="addSubcategory()">Ajouter Sous-Catégorie</button>
+                </form>
+                <button type="button" class="delete-button" onclick="deleteAllCategories()">Supprimer toutes les Catégories</button>
+            </section>
+
+            <!-- Ajout de matériel -->
+            <section class="material-addition">
+                <h2>Ajouter un Matériel</h2>
+                <form id="material-form">
+                    <select id="material-category">
+                        <option value="" disabled selected>Choisir une Catégorie</option>
+                    </select>
+                    <select id="material-subcategory">
+                        <option value="" disabled selected>Choisir une Sous-Catégorie</option>
+                    </select>
+                    <input type="text" id="material-name" placeholder="Nom du Matériel" required>
+                    <input type="text" id="material-model" placeholder="Modèle" required>
+                    <input type="text" id="material-brand" placeholder="Marque" required>
+                    <input type="text" id="material-situation" placeholder="Situation" required>
+                    <input type="number" id="material-quantity" placeholder="Quantité" required>
+                    <select id="material-status">
+                        <option value="Sur Stock">Sur Stock</option>
+                        <option value="Loué">Loué</option>
+                    </select>
+                    <button type="button" onclick="addMaterial()">Ajouter Matériel</button>
+                </form>
+
+                <!-- Bouton Enregistrer les Données et Supprimer tout le Stock -->
+                <section class="actions">
+                    <button type="button" onclick="saveData()">Enregistrer les Données</button>
+                    <button type="button" onclick="deleteAllStock()" class="delete-button">Supprimer tout le Stock</button>
+                </section>
+            </section>
+        </div>
+
+        <!-- Liste des matériels -->
+        <div id="material-list-section" style="display: none;">
+            <section class="material-list">
+                <h2>Liste des Matériels</h2>
+
+                <!-- Boutons "Location" et "Vente" -->
+                <div class="operation-buttons">
+                    <button type="button" onclick="startOperation('Location')">Location</button>
+                    <button type="button" onclick="startOperation('Vente')">Vente</button>
+                </div>
+
+                <div class="filter-section">
+                    <input type="text" id="search-bar" placeholder="Rechercher...">
+                    <select id="filter-category">
+                        <option value="" selected>Filtrer par Catégorie</option>
+                    </select>
+                    <select id="filter-subcategory">
+                        <option value="" selected>Filtrer par Sous-Catégorie</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th> <!-- Pour les cases à cocher -->
+                                <th>Catégorie</th>
+                                <th>Sous-Catégorie</th>
+                                <th>Nom</th>
+                                <th>Modèle</th>
+                                <th>Marque</th>
+                                <th>Quantité</th>
+                                <th>État</th>
+                                <th>Informations</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materials-table">
+                            <!-- Les matériels apparaîtront ici -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bouton Enregistrer les Données et Supprimer tout le Stock -->
+                <section class="actions">
+                    <button type="button" onclick="saveData()">Enregistrer les Données</button>
+                    <button type="button" onclick="deleteAllStock()" class="delete-button">Supprimer tout le Stock</button>
+                </section>
+            </section>
+        </div>
+
+        <!-- Popups pour les informations -->
+        <!-- Popup pour la location/vente -->
+        <div class="popup" id="operation-popup">
+            <div class="popup-content">
+                <span class="close-btn" onclick="closePopup('operation-popup')">&times;</span>
+                <h3 id="operation-title">Informations</h3>
+                <input type="text" id="authorized-person" placeholder="Nom de la personne autorisée">
+                <input type="text" id="company-name" placeholder="Pour le compte de">
+                <input type="text" id="project-name" placeholder="Projet">
+                <input type="date" id="departure-date" placeholder="Date de sortie">
+                <input type="date" id="return-date" placeholder="Date de retour" style="display: none;">
+                <div id="selected-materials">
+                    <!-- Les matériels sélectionnés apparaîtront ici -->
+                </div>
+                <button type="button" onclick="generateOperationPDF()">Rédiger le Bon de Sortie</button>
+            </div>
+        </div>
+
+        <!-- Popup pour changer l'état -->
+        <div class="popup" id="status-popup">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+
+        <!-- Popup pour les informations de location lors de l'ajout de matériel -->
+        <div class="popup" id="rental-info-popup">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+
+    </main>
+    <!-- Incluez jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Assurez-vous que jsPDF est accessible globalement -->
+    <script>
+        window.jsPDF = window.jspdf.jsPDF;
+    </script>
+    <!-- Incluez jsPDF-AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.14/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        const categories = [];
+        let materials = [];
+        let currentMaterialIndex = null;
+        let newMaterial = null;
+        let operationType = null;
+        let selectedMaterials = [];
+        let statusFilter = '';
+        let rentalInfo = null; // Pour stocker les infos de location lors de l'ajout
+
+        const materialsTable = document.getElementById("materials-table");
+        const searchBar = document.getElementById("search-bar");
+
+        // Fonction pour ouvrir la section d'ajout de matériel
+        function openAddMaterial() {
+            document.getElementById("add-material-section").style.display = "block";
+            document.getElementById("material-list-section").style.display = "none";
+        }
+
+        // Fonction pour ouvrir la liste des matériels
+        function openMaterialList() {
+            document.getElementById("material-list-section").style.display = "block";
+            document.getElementById("add-material-section").style.display = "none";
+            renderMaterials();
+        }
+
+        // Met à jour le tableau de bord
+        function updateDashboard() {
+            const totalItems = materials.length;
+            const rentedItems = materials.filter(material => material.rentedQuantity && material.rentedQuantity > 0).length;
+            const inStockItems = materials.filter(material => !material.rentedQuantity || material.rentedQuantity === 0).length;
+
+            document.getElementById("total-items").textContent = totalItems;
+            document.getElementById("rented-items").textContent = rentedItems;
+            document.getElementById("in-stock-items").textContent = inStockItems;
+        }
+
+        // Ajouter une catégorie
+        function addCategory() {
+            const categoryName = document.getElementById("category-name").value.trim();
+            if (!categoryName) return alert("Veuillez entrer un nom pour la catégorie.");
+            categories.push({ name: categoryName, subcategories: [] });
+            renderDropdowns();
+            document.getElementById("category-name").value = "";
+        }
+
+        // Ajouter une sous-catégorie
+        function addSubcategory() {
+            const parentCategoryIndex = document.getElementById("parent-category").value;
+            const subcategoryName = document.getElementById("subcategory-name").value.trim();
+            if (!subcategoryName || parentCategoryIndex === "") return alert("Veuillez sélectionner une catégorie.");
+            categories[parentCategoryIndex].subcategories.push(subcategoryName);
+            renderDropdowns();
+            document.getElementById("subcategory-name").value = "";
+        }
+
+        // Met à jour les listes déroulantes de catégories et sous-catégories
+        function renderDropdowns() {
+            const parentCategoryDropdown = document.getElementById("parent-category");
+            const materialCategoryDropdown = document.getElementById("material-category");
+            const filterCategoryDropdown = document.getElementById("filter-category");
+
+            parentCategoryDropdown.innerHTML = '<option value="" disabled selected>Choisir une Catégorie</option>';
+            materialCategoryDropdown.innerHTML = '<option value="" selected>Aucune Catégorie</option>';
+            filterCategoryDropdown.innerHTML = '<option value="" selected>Filtrer par Catégorie</option>';
+
+            categories.forEach((category, index) => {
+                const option = document.createElement("option");
+                option.value = index;
+                option.textContent = category.name;
+
+                parentCategoryDropdown.appendChild(option.cloneNode(true));
+                materialCategoryDropdown.appendChild(option.cloneNode(true));
+                filterCategoryDropdown.appendChild(option.cloneNode(true));
+            });
+
+            updateSubcategoryDropdown();
+            updateFilterSubcategoryDropdown();
+        }
+
+        // Met à jour la liste déroulante des sous-catégories en fonction de la catégorie sélectionnée
+        function updateSubcategoryDropdown() {
+            const materialCategoryDropdown = document.getElementById("material-category");
+            const materialSubcategoryDropdown = document.getElementById("material-subcategory");
+
+            materialSubcategoryDropdown.innerHTML = '<option value="" selected>Aucune Sous-Catégorie</option>';
+
+            const selectedCategoryIndex = materialCategoryDropdown.value;
+            if (selectedCategoryIndex === "") return;
+
+            const subcategories = categories[selectedCategoryIndex].subcategories;
+            subcategories.forEach((subcategory) => {
+                const option = document.createElement("option");
+                option.value = subcategory;
+                option.textContent = subcategory;
+                materialSubcategoryDropdown.appendChild(option);
+            });
+        }
+
+        // Met à jour la liste déroulante des sous-catégories pour le filtrage
+        function updateFilterSubcategoryDropdown() {
+            const filterCategoryDropdown = document.getElementById("filter-category");
+            const filterSubcategoryDropdown = document.getElementById("filter-subcategory");
+
+            filterSubcategoryDropdown.innerHTML = '<option value="" selected>Filtrer par Sous-Catégorie</option>';
+
+            const selectedCategoryIndex = filterCategoryDropdown.value;
+            let subcategories = [];
+
+            if (selectedCategoryIndex !== "") {
+                subcategories = categories[selectedCategoryIndex].subcategories;
+            } else {
+                // Si aucune catégorie sélectionnée, lister toutes les sous-catégories
+                categories.forEach(cat => {
+                    subcategories = subcategories.concat(cat.subcategories);
+                });
+            }
+
+            subcategories.forEach(subcat => {
+                const option = document.createElement("option");
+                option.value = subcat;
+                option.textContent = subcat;
+                filterSubcategoryDropdown.appendChild(option);
+            });
+        }
+
+        // Événement pour mettre à jour les sous-catégories lors du changement de catégorie
+        document.getElementById("material-category").addEventListener("change", updateSubcategoryDropdown);
+
+        // Événement pour mettre à jour les sous-catégories de filtrage lors du changement de catégorie
+        document.getElementById("filter-category").addEventListener("change", function () {
+            updateFilterSubcategoryDropdown();
+            applyFilters();
+        });
+
+        // Événement pour le changement de sous-catégorie dans le filtre
+        document.getElementById("filter-subcategory").addEventListener("change", applyFilters);
+
+        // Événement pour afficher le popup lors de la sélection de "Loué"
+        document.getElementById("material-status").addEventListener("change", function () {
+            if (this.value === "Loué") {
+                openRentalInfoPopup();
+            } else {
+                rentalInfo = null;
+            }
+        });
+
+        // Ajouter un matériel
+        function addMaterial() {
+            const categoryIndex = document.getElementById("material-category").value || null;
+            const subcategoryName = document.getElementById("material-subcategory").value || null;
+            const name = document.getElementById("material-name").value.trim();
+            const model = document.getElementById("material-model").value.trim();
+            const brand = document.getElementById("material-brand").value.trim();
+            const situation = document.getElementById("material-situation").value.trim();
+            const quantity = parseInt(document.getElementById("material-quantity").value, 10);
+            const status = document.getElementById("material-status").value;
+
+            if (!name || !model || !brand || !situation || !quantity || !status) {
+                return alert("Veuillez remplir tous les champs.");
+            }
+
+            if (status === "Loué" && !rentalInfo) {
+                alert("Veuillez remplir les informations de location.");
+                return;
+            }
+
+            const material = {
+                categoryIndex,
+                subcategoryName,
+                name,
+                model,
+                brand,
+                situation,
+                quantity,
+                status,
+                rentedQuantity: status === "Loué" ? quantity : 0,
+                rentalInfo: rentalInfo || null
+            };
+
+            materials.push(material);
+            renderMaterials();
+            updateDashboard();
+            document.getElementById("material-form").reset();
+            rentalInfo = null;
+        }
+
+        // Fonction pour ouvrir le popup des informations de location
+        function openRentalInfoPopup() {
+            const popupContent = `
+                <div class="popup-content">
+                    <span class="close-btn" onclick="closePopup('rental-info-popup')">&times;</span>
+                    <h3>Informations de Location</h3>
+                    <input type="text" id="renter-name" placeholder="Nom du locataire" required>
+                    <input type="date" id="rental-start-date" placeholder="Date de sortie" required>
+                    <input type="date" id="rental-end-date" placeholder="Date de retour" required>
+                    <button type="button" onclick="confirmRentalInfo()">Confirmer</button>
+                </div>
+            `;
+            const popup = document.getElementById("rental-info-popup");
+            popup.innerHTML = popupContent;
+            popup.classList.add("active");
+        }
+
+        // Fonction pour confirmer les informations de location
+        function confirmRentalInfo() {
+            const renterName = document.getElementById("renter-name").value.trim();
+            const rentalStartDate = document.getElementById("rental-start-date").value;
+            const rentalEndDate = document.getElementById("rental-end-date").value;
+
+            if (!renterName || !rentalStartDate || !rentalEndDate) {
+                alert("Veuillez remplir tous les champs de location.");
+                return;
+            }
+
+            rentalInfo = {
+                name: renterName,
+                start: rentalStartDate,
+                end: rentalEndDate
+            };
+
+            closePopup('rental-info-popup');
+        }
+
+        // Affiche les matériels dans le tableau
+        function renderMaterials() {
+            materialsTable.innerHTML = "";
+
+            materials.forEach((material, index) => {
+                const row = document.createElement("tr");
+
+                const categoryName = (material.categoryIndex !== null && categories[material.categoryIndex]) ? categories[material.categoryIndex].name : "-";
+                const subcategoryName = material.subcategoryName || "-";
+
+                // Définir la classe pour la cellule d'état
+                const statusClass = (material.rentedQuantity && material.rentedQuantity > 0) ? 'status-rented' : 'status-instock';
+
+                // Informations
+                let infoContent = '';
+                if (material.rentedQuantity && material.rentedQuantity > 0) {
+                    infoContent = `Locataire: ${material.rentalInfo ? material.rentalInfo.name : ''}`;
+                } else {
+                    infoContent = `<input type="text" value="${material.situation}" data-index="${index}" class="situation-input">
+                    <button onclick="saveSituation(${index})" class="save-button"><span class="icon">&#x2713;</span></button>`;
+                }
+
+                // Afficher la quantité avec le nombre loué en parenthèses
+                let quantityDisplay = material.quantity.toString();
+                if (material.rentedQuantity && material.rentedQuantity > 0) {
+                    quantityDisplay += ` (${material.rentedQuantity} loué${material.rentedQuantity > 1 ? 's' : ''})`;
+                }
+
+                row.innerHTML = `
+                    <td>${operationType ? `<input type="checkbox" class="select-material" data-index="${index}">` : ''}</td>
+                    <td>${categoryName}</td>
+                    <td>${subcategoryName}</td>
+                    <td>${material.name}</td>
+                    <td>${material.model}</td>
+                    <td>${material.brand}</td>
+                    <td>${quantityDisplay}</td>
+                    <td class="${statusClass}">${(material.rentedQuantity && material.rentedQuantity > 0) ? 'Loué' : 'Sur Stock'}</td>
+                    <td>${infoContent}</td>
+                    <td>
+                        <button onclick="changeStatus(${index})">Changer l'État</button>
+                    </td>
+                `;
+
+                materialsTable.appendChild(row);
+            });
+
+            // Appliquer les filtres après le rendu
+            applyFilters();
+        }
+
+        // Enregistrer la situation modifiée
+        function saveSituation(index) {
+            const input = document.querySelector(`.situation-input[data-index="${index}"]`);
+            if (input) {
+                const newSituation = input.value.trim();
+                materials[index].situation = newSituation;
+                alert("Situation mise à jour avec succès !");
+            }
+        }
+
+        // Change l'état d'un matériel
+        function changeStatus(index) {
+            const material = materials[index];
+            currentMaterialIndex = index;
+
+            let options = '';
+
+            if (material.rentedQuantity && material.rentedQuantity > 0) {
+                options = `<option value="Sur Stock">Revenir au Stock</option>`;
+            }
+
+            const popupContent = `
+                <div class="popup-content">
+                    <span class="close-btn" onclick="closePopup('status-popup')">&times;</span>
+                    <h3>Changer l'État</h3>
+                    <select id="new-status">
+                        <option value="" disabled selected>Choisir un État</option>
+                        ${options}
+                    </select>
+                    <button onclick="applyStatus()">Confirmer</button>
+                </div>
+            `;
+
+            const popup = document.getElementById("status-popup");
+            popup.innerHTML = popupContent;
+            popup.classList.add("active");
+        }
+
+        // Applique le nouvel état
+        function applyStatus() {
+            const newStatus = document.getElementById("new-status").value;
+            if (!newStatus) return alert("Veuillez sélectionner un nouvel état.");
+
+            const material = materials[currentMaterialIndex];
+
+            if (newStatus === "Sur Stock") {
+                material.rentedQuantity = 0;
+                material.rentalInfo = null;
+                renderMaterials();
+                updateDashboard();
+                closePopup('status-popup');
+            }
+        }
+
+        // Ferme le popup spécifié
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) {
+                popup.classList.remove("active");
+                if (popupId === "status-popup" || popupId === "rental-info-popup") {
+                    popup.innerHTML = '';
+                }
+            }
+        }
+
+        // Sauvegarde les données dans le localStorage
+        function saveData() {
+            const data = {
+                materials,
+                categories
+            };
+            localStorage.setItem("stockData", JSON.stringify(data));
+            alert("Données enregistrées avec succès !");
+        }
+
+        // Chargement des données depuis le localStorage
+        function loadData() {
+            const savedData = JSON.parse(localStorage.getItem("stockData") || "{}");
+            materials = savedData.materials || [];
+            const savedCategories = savedData.categories || [];
+
+            categories.length = 0; // Réinitialise le tableau des catégories
+            savedCategories.forEach(cat => {
+                categories.push(cat);
+            });
+
+            renderDropdowns();
+            renderMaterials();
+            updateDashboard();
+        }
+
+        // Supprimer toutes les catégories et sous-catégories enregistrées
+        function deleteAllCategories() {
+            if (confirm("Êtes-vous sûr de vouloir supprimer toutes les catégories et sous-catégories ?")) {
+                categories.length = 0;
+                renderDropdowns();
+                alert("Toutes les catégories et sous-catégories ont été supprimées.");
+            }
+        }
+
+        // Supprimer tout le stock
+        function deleteAllStock() {
+            if (confirm("Êtes-vous sûr de vouloir supprimer tout le stock ?")) {
+                materials.length = 0;
+                renderMaterials();
+                updateDashboard();
+                alert("Tout le stock a été supprimé.");
+            }
+        }
+
+        // Fonction pour appliquer les filtres
+        function applyFilters() {
+            const query = searchBar.value.toLowerCase();
+            const selectedCategoryIndex = document.getElementById("filter-category").value;
+            const selectedSubcategoryName = document.getElementById("filter-subcategory").value;
+
+            Array.from(materialsTable.rows).forEach(row => {
+                const cells = row.querySelectorAll("td");
+                const categoryCell = cells[1].textContent;
+                const subcategoryCell = cells[2].textContent;
+                const statusCell = cells[7].textContent;
+
+                let match = true;
+
+                // Filtrer par statut
+                if (statusFilter && statusCell !== statusFilter) {
+                    match = false;
+                }
+
+                // Recherche par mot-clé
+                if (query) {
+                    match = match && Array.from(cells).some(cell => cell.textContent.toLowerCase().includes(query));
+                }
+
+                // Filtrer par catégorie
+                if (selectedCategoryIndex) {
+                    const categoryName = categories[selectedCategoryIndex].name;
+                    if (categoryCell !== categoryName) {
+                        match = false;
+                    }
+                }
+
+                // Filtrer par sous-catégorie
+                if (selectedSubcategoryName) {
+                    if (subcategoryCell !== selectedSubcategoryName) {
+                        match = false;
+                    }
+                }
+
+                row.style.display = match ? "" : "none";
+            });
+        }
+
+        // Événement pour la barre de recherche
+        searchBar.addEventListener("input", applyFilters);
+
+        // Fonction pour filtrer par statut à partir du tableau de bord
+        function filterByStatus(status) {
+            statusFilter = status;
+            openMaterialList();
+            applyFilters();
+        }
+
+        // Fonction pour démarrer une opération (Location ou Vente)
+        function startOperation(type) {
+            operationType = type;
+            selectedMaterials = [];
+            renderMaterials();
+            const operationButton = document.createElement("button");
+            operationButton.textContent = "Rédiger le Bon de Sortie";
+            operationButton.onclick = openOperationPopup;
+            operationButton.id = "operation-button";
+
+            const cancelButton = document.createElement("button");
+            cancelButton.textContent = "Annuler l'Opération";
+            cancelButton.onclick = cancelOperation;
+            cancelButton.id = "cancel-operation";
+
+            const operationButtonsDiv = document.querySelector(".operation-buttons");
+
+            if (!document.getElementById("operation-button")) {
+                operationButtonsDiv.appendChild(operationButton);
+                operationButtonsDiv.appendChild(cancelButton);
+            }
+        }
+
+        // Fonction pour annuler l'opération
+        function cancelOperation() {
+            operationType = null;
+            selectedMaterials = [];
+            renderMaterials();
+            document.getElementById("operation-button").remove();
+            document.getElementById("cancel-operation").remove();
+        }
+
+        // Fonction pour ouvrir le popup d'opération
+        function openOperationPopup() {
+            const checkboxes = document.querySelectorAll(".select-material:checked");
+            if (checkboxes.length === 0) {
+                alert("Veuillez sélectionner au moins un matériel.");
+                return;
+            }
+
+            selectedMaterials = Array.from(checkboxes).map(cb => materials[cb.dataset.index]);
+
+            const popup = document.getElementById("operation-popup");
+            popup.classList.add("active");
+
+            // Ajuster le titre et les champs en fonction de l'opération
+            document.getElementById("operation-title").textContent = `Informations pour ${operationType}`;
+            document.getElementById("return-date").style.display = operationType === "Location" ? "block" : "none";
+
+            // Afficher les matériels sélectionnés
+            const container = document.getElementById("selected-materials");
+            container.innerHTML = "";
+            selectedMaterials.forEach((material, index) => {
+                const availableQuantity = operationType === "Vente"
+                    ? material.quantity - (material.rentedQuantity || 0)
+                    : material.quantity - (material.rentedQuantity || 0);
+
+                const materialDiv = document.createElement("div");
+                materialDiv.innerHTML = `
+                    <h4>${material.name}</h4>
+                    <input type="number" placeholder="Quantité" id="quantity-${index}" value="${availableQuantity}" max="${availableQuantity}" min="1">
+                    <input type="text" placeholder="Observations" id="observations-${index}">
+                `;
+                container.appendChild(materialDiv);
+            });
+        }
+
+        // Fonction pour générer le PDF de l'opération
+        function generateOperationPDF() {
+            const authorizedPerson = document.getElementById("authorized-person").value.trim();
+            const companyName = document.getElementById("company-name").value.trim();
+            const projectName = document.getElementById("project-name").value.trim();
+            const departureDate = document.getElementById("departure-date").value;
+            const returnDate = document.getElementById("return-date").value;
+
+            if (!authorizedPerson || !companyName || !projectName || !departureDate || (operationType === "Location" && !returnDate)) {
+                return alert("Veuillez remplir tous les champs requis.");
+            }
+
+            const tableData = selectedMaterials.map((material, index) => {
+                const availableQuantity = material.quantity - (material.rentedQuantity || 0);
+                const quantity = parseInt(document.getElementById(`quantity-${index}`).value, 10);
+                const observations = document.getElementById(`observations-${index}`).value.trim();
+
+                if (quantity > availableQuantity) {
+                    alert(`La quantité spécifiée pour ${material.name} dépasse la quantité disponible.`);
+                    throw new Error("Quantité invalide");
+                }
+
+                return [
+                    index + 1,
+                    material.name,
+                    quantity,
+                    observations
+                ];
+            });
+
+            // Génération du PDF
+            var doc = new jsPDF();
+
+            // Marges
+            var marginLeft = 25; // en mm
+            var marginTop = 25; // en mm
+            var pageWidth = doc.internal.pageSize.getWidth();
+
+            // Titre
+            doc.setFontSize(24);
+            doc.text("Mizan labess", pageWidth / 2, marginTop, { align: "center" });
+
+            // Sous-titre
+            doc.setFontSize(16);
+            doc.text("Bon de Sortie de Matériels", pageWidth / 2, marginTop + 15, { align: "center" });
+
+            // Ajouter la date du jour
+            var today = new Date();
+            var dateString = today.toLocaleDateString('fr-FR'); // Formater la date au format français
+
+            doc.setFontSize(12);
+            doc.text(`Date: ${dateString}`, pageWidth / 2, marginTop + 30, { align: "center" });
+
+            // Informations
+            var infoStartY = marginTop + 45; // Décaler après la date
+            doc.text(`Nom de la personne autorisée: ${authorizedPerson}`, marginLeft, infoStartY);
+            doc.text(`Pour le compte de: ${companyName}`, marginLeft, infoStartY + 10);
+            doc.text(`Projet: ${projectName}`, marginLeft, infoStartY + 20);
+            doc.text(`Date de sortie: ${departureDate}`, marginLeft, infoStartY + 30);
+            if (operationType === "Location") {
+                doc.text(`Date de retour: ${returnDate}`, marginLeft, infoStartY + 40);
+            }
+
+            // Tableau avec les données
+            var currentY = infoStartY + (operationType === "Location" ? 55 : 45);
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['Numéro', 'Matériel', 'Quantité', 'Observations']],
+                body: tableData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 12,
+                    fillColor: [255, 255, 255],
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1
+                },
+                headStyles: {
+                    fillColor: [255, 255, 255],
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1
+                },
+                bodyStyles: {
+                    fillColor: [255, 255, 255],
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.1
+                },
+                columnStyles: {
+                    0: { cellWidth: 20 }
+                },
+                margin: { left: marginLeft, right: marginLeft }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 20;
+
+            // Signatures en bas de page
+            var pageHeight = doc.internal.pageSize.getHeight();
+            var signatureY = pageHeight - 45; // Ajuster selon besoin
+
+            doc.text(`Signature de l'autorité`, marginLeft, signatureY);
+            doc.text(`Signature de direction`, pageWidth - marginLeft - 45, signatureY);
+
+            doc.save(`Bon_de_Sortie.pdf`);
+
+            // Mise à jour des quantités et états des matériels
+            selectedMaterials.forEach((material, index) => {
+                const quantityInput = parseInt(document.getElementById(`quantity-${index}`).value, 10);
+
+                if (operationType === "Location") {
+                    // Mettre à jour la quantité louée
+                    material.rentedQuantity = (material.rentedQuantity || 0) + quantityInput;
+                    material.rentalInfo = {
+                        name: authorizedPerson,
+                        start: departureDate,
+                        end: returnDate
+                    };
+                } else if (operationType === "Vente") {
+                    // Soustraire la quantité vendue de la quantité totale
+                    material.quantity -= quantityInput;
+                    if (material.quantity <= 0) {
+                        // Supprimer le matériel du tableau s'il n'y a plus de stock
+                        const materialIndex = materials.indexOf(material);
+                        if (materialIndex > -1) {
+                            materials.splice(materialIndex, 1);
+                        }
+                    }
+                }
+            });
+
+            renderMaterials();
+            updateDashboard();
+
+            // Fermer le popup
+            closePopup('operation-popup');
+
+            // Réinitialiser l'opération
+            operationType = null;
+            selectedMaterials = [];
+            document.getElementById("operation-button").remove();
+            document.getElementById("cancel-operation").remove();
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDropdowns();
+            loadData();
+        });
+    </script>
+</body>
+</html>
